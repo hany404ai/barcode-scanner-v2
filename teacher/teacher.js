@@ -1409,12 +1409,13 @@
     } catch (e) { }
   }
 
+  var BASE_VIDEO = { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } };
   async function getStream(deviceId) {
-    var base = { width: { ideal: 1280 }, height: { ideal: 720 } };
     try {
-      return await navigator.mediaDevices.getUserMedia({ video: deviceId ? Object.assign({}, base, { deviceId: { exact: deviceId } }) : base, audio: false });
+      var constraints = { video: deviceId ? Object.assign({}, BASE_VIDEO, { deviceId: { exact: deviceId } }) : BASE_VIDEO, audio: false };
+      return await navigator.mediaDevices.getUserMedia(constraints);
     } catch (e) {
-      if (e.name === "OverconstrainedError" && deviceId) {
+      if (e && e.name === "OverconstrainedError") {
         return navigator.mediaDevices.getUserMedia({ video: true, audio: false });
       }
       throw e;
