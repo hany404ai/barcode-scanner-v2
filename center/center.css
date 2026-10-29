@@ -1,0 +1,50 @@
+/* ==========================================================================
+   center/center.css — أنماط خاصة بتطبيق المركز فقط.
+   الأساسيات (المتغيرات، الأزرار، الجداول، الحوارات) في ../shared/base.css
+   ========================================================================== */
+
+#page-dashboard .stat { min-height: 76px; }
+
+/* مصفوفة الوصول */
+.matrix td { text-align: center; font-variant-numeric: tabular-nums; }
+.matrix td.yes { background: var(--present-bg); color: var(--present); font-weight: 700; }
+.matrix td.no { background: var(--absent-bg); color: var(--absent); font-weight: 700; }
+.matrix td.none { color: var(--muted); }
+.matrix th[scope="row"] { min-width: 130px; }
+
+/* منطقة الخطر */
+.danger-zone { border: 1px solid var(--danger); border-radius: var(--radius); padding: 16px; }
+.danger-zone h3 { color: var(--danger); }
+
+/* شاشة القفل */
+.lockscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  padding-block: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-bottom));
+  background: var(--bg);
+  overflow: auto;
+}
+.lockscreen[hidden] { display: none; }
+.lockcard {
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .18);
+}
+.lockcard h1 { font-size: 1.3rem; margin: 16px 0 4px; }
+.lockcard .brand { display: flex; align-items: center; gap: 10px; }
+.lockcard .brand > span { display: block; }
+.lockcard .brand b { display: block; }
+.lockcard .brand span span { color: var(--muted); font-size: .82rem; }
+.lockcard .lockmsg { color: var(--absent); min-height: 22px; margin-top: 6px; }
+.lockcard .btn { width: 100%; justify-content: center; }
+body.locked { overflow: hidden; }
+body.locked .skip-link { display: none; }

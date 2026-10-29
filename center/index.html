@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#086f7c" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#3cc3d4" media="(prefers-color-scheme: dark)">
+<meta name="description" content="مركز حضور الطلاب: الطلاب والمعلمون والجداول واستيراد ملفات الغياب والتقارير.">
+<title>المركز — حضور الطلاب</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Crect%20width='100'%20height='100'%20rx='18'%20fill='%23086f7c'/%3E%3Cg%20fill='%23fff'%3E%3Crect%20x='20'%20y='26'%20width='8'%20height='48'/%3E%3Crect%20x='34'%20y='26'%20width='4'%20height='48'/%3E%3Crect%20x='44'%20y='26'%20width='10'%20height='48'/%3E%3Crect%20x='60'%20y='26'%20width='4'%20height='48'/%3E%3Crect%20x='70'%20y='26'%20width='8'%20height='48'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="stylesheet" href="../shared/base.css">
+<link rel="stylesheet" href="center.css">
+</head>
+<body>
+<a class="skip-link" href="#main">تخطي إلى المحتوى</a>
+
+<!-- ================= شاشة القفل ================= -->
+<section id="lockScreen" class="lockscreen" hidden aria-labelledby="lockTitle">
+  <div class="lockcard">
+    <div class="brand">
+      <span class="mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false"><rect x="3" y="5" width="2" height="14"/><rect x="7" y="5" width="1" height="14"/><rect x="10" y="5" width="3" height="14"/><rect x="15" y="5" width="1" height="14"/><rect x="18" y="5" width="3" height="14"/></svg>
+      </span>
+      <span><b>المركز</b><span id="lockSchoolName">حضور الطلاب</span></span>
+    </div>
+    <h1 id="lockTitle">المركز مقفل</h1>
+    <p class="small muted">أدخل رمز PIN لعرض بيانات المركز.</p>
+    <form id="lockForm" novalidate>
+      <label class="f"><span>رمز PIN</span>
+        <input id="lockPin" type="password" inputmode="numeric" autocomplete="current-password" maxlength="8" aria-describedby="lockMsg">
+      </label>
+      <p class="small lockmsg" id="lockMsg" role="alert" aria-live="assertive"></p>
+      <div class="row">
+        <button class="btn primary" id="btnUnlock" type="submit">فتح المركز</button>
+      </div>
+    </form>
+    <hr class="hr">
+    <p class="small muted">نسيت الرمز؟ «إعادة ضبط المركز» تمسح كل بيانات المركز نهائيًا، ويمكنك بعدها استعادة نسخة احتياطية JSON من الإعدادات.</p>
+    <button class="btn danger" id="btnResetCenter" type="button">إعادة ضبط المركز (نسيت PIN)</button>
+  </div>
+</section>
+
+<header class="appbar" id="appbar">
+  <div class="wrap">
+    <div class="brand">
+      <span class="mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false"><rect x="3" y="5" width="2" height="14"/><rect x="7" y="5" width="1" height="14"/><rect x="10" y="5" width="3" height="14"/><rect x="15" y="5" width="1" height="14"/><rect x="18" y="5" width="3" height="14"/></svg>
+      </span>
+      <span>
+        <b>المركز</b>
+        <span id="centerSchoolName">حضور الطلاب</span>
+      </span>
+    </div>
+    <nav class="nav" id="mainNav" aria-label="أقسام المركز">
+      <a href="#dashboard" data-page="dashboard">لوحة اليوم</a>
+      <a href="#students" data-page="students">الطلاب</a>
+      <a href="#teachers" data-page="teachers">المعلمون</a>
+      <a href="#inbox" data-page="inbox">الوارد</a>
+      <a href="#reports" data-page="reports">التقارير</a>
+      <a href="#settings" data-page="settings">الإعدادات</a>
+    </nav>
+    <button class="iconbtn" id="btnLockNow" type="button" aria-label="قفل المركز الآن" title="قفل المركز الآن" hidden>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+    </button>
+  </div>
+</header>
+
+<main id="main" class="wrap" tabindex="-1">
+  <p class="notice danger" id="storeWarn" hidden>تعذر حفظ البيانات في هذا المتصفح (المساحة ممتلئة أو التخزين معطّل). لن تُحفظ التعديلات بعد إغلاق الصفحة.</p>
+  <p class="notice info" id="migrateNotice" role="status" hidden></p>
+
+  <!-- ================= لوحة اليوم ================= -->
+  <section class="page on" id="page-dashboard" data-page="dashboard" aria-labelledby="h-dashboard">
+    <div class="notice" id="pinWarn" hidden>
+      <strong>المركز غير محمي.</strong> أي شخص يفتح هذا الجهاز يستطيع الوصول للبيانات. يمكنك تعيين PIN من
+      <a href="#settings">الإعدادات</a>.
+      <button class="btn sm" id="btnPinSnooze" type="button" style="margin-inline-start:8px">تأجيل</button>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <div class="card-head">
+        <h1 id="h-dashboard">لوحة اليوم</h1>
+        <div class="row">
+          <label class="f" style="max-width:190px"><span>التاريخ</span>
+            <input type="date" id="dashDate">
+          </label>
+          <button class="btn" id="btnRefreshMatrix" type="button">تحديث</button>
+          <button class="btn" id="btnCopyReminder" type="button">نسخ رسالة التذكير</button>
+        </div>
+      </div>
+      <div class="stats" id="dashStats" aria-live="polite"></div>
+      <p class="small muted" id="matrixInfo" style="margin-top:10px"></p>
+      <div class="tablewrap matrix" style="margin-top:12px">
+        <table id="matrixTbl" aria-label="مصفوفة ما وصل وما لم يصل"></table>
+      </div>
+      <p class="small muted" id="dashHint" style="margin-top:10px">«لم يصل» تعني أن ملف غياب تلك الحصة لم يُستورد في المركز بعد.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>طلاب بلا صف أو فصل</h2></div>
+      <div id="dashIncomplete"></div>
+    </div>
+  </section>
+
+  <!-- ================= الطلاب ================= -->
+  <section class="page" id="page-students" data-page="students" aria-labelledby="h-students">
+    <div class="grid2">
+      <div>
+        <div class="card">
+          <div class="card-head"><h2 id="formTitle">إضافة طالب</h2></div>
+          <form id="stuForm" novalidate>
+            <div class="fields">
+              <label class="f"><span>اسم الطالب</span>
+                <input id="sName" type="text" autocomplete="off" required>
+              </label>
+              <label class="f"><span>كود الباركود</span>
+                <input id="sCode" type="text" inputmode="numeric" autocomplete="off" dir="ltr" required>
+              </label>
+              <label class="f"><span>الصف</span>
+                <input id="sGrade" type="text" list="dlGrade" autocomplete="off">
+                <datalist id="dlGrade"></datalist>
+              </label>
+              <label class="f"><span>الفصل</span>
+                <input id="sClass" type="text" list="dlClass" autocomplete="off">
+                <datalist id="dlClass"></datalist>
+              </label>
+            </div>
+            <p class="small" id="sMsg" role="alert" style="color:var(--absent);margin-top:8px"></p>
+            <div class="row" style="margin-top:12px">
+              <button class="btn primary" id="sSave" type="submit">إضافة الطالب</button>
+              <button class="btn" id="sCancel" type="button" hidden>إلغاء التعديل</button>
+            </div>
+          </form>
+          <hr class="hr">
+          <div class="row">
+            <label class="btn filebtn">استيراد Excel / CSV
+              <input type="file" id="fileIn" accept=".xlsx,.xls,.csv,.tsv,.txt">
+            </label>
+            <button class="btn" id="btnTemplate" type="button">نموذج استيراد</button>
+            <button class="btn" id="btnDemo" type="button">طلاب تجريبيون</button>
+          </div>
+          <p class="small muted" id="impMsg" role="status" style="margin-top:8px"></p>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>طباعة ملصقات الباركود</h2></div>
+          <div class="fields">
+            <label class="f"><span>حجم الملصق</span>
+              <select id="lSize">
+                <option value="s">صغير 50×25 مم</option>
+                <option value="m" selected>متوسط 60×30 مم</option>
+                <option value="l">كبير 90×45 مم</option>
+              </select>
+            </label>
+            <label class="f"><span>نوع الورق</span>
+              <select id="lMode">
+                <option value="sheet" selected>A4 ورقة</option>
+                <option value="roll">رول لاصق (ملصق لكل صفحة)</option>
+              </select>
+            </label>
+            <label class="f"><span>هامش الصفحة (مم)</span>
+              <input id="lMargin" type="number" min="0" max="20" step="1" value="2">
+            </label>
+            <label class="f"><span>المسافة بين الملصقات (مم)</span>
+              <input id="lGap" type="number" min="0" max="10" step="1" value="1">
+            </label>
+            <label class="f"><span>خطوط القص</span>
+              <select id="lCrop">
+                <option value="no" selected>بدون</option>
+                <option value="yes">إظهار</option>
+              </select>
+            </label>
+          </div>
+          <p class="small muted" id="lblCount" style="margin-top:10px"></p>
+          <div class="row" style="margin-top:8px">
+            <button class="btn" id="btnLblPreview" type="button">معاينة</button>
+            <button class="btn primary" id="btnPrint" type="button">طباعة</button>
+          </div>
+          <p class="small muted" id="lblHint" style="margin-top:8px">تُطبع الملصقات المحددة، أو كل نتائج الفلترة إن لم تحدد أحدًا.</p>
+          <div class="labels" id="lblPreview"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h1 id="h-students">الطلاب <span class="muted small" id="stuCount"></span></h1>
+        </div>
+        <div class="fields">
+          <label class="f"><span>بحث</span>
+            <input type="search" id="stuSearch" placeholder="اسم أو كود" autocomplete="off">
+          </label>
+          <label class="f"><span>الصف</span>
+            <select id="aGrade"></select>
+          </label>
+          <label class="f"><span>الفصل</span>
+            <select id="aClass"></select>
+          </label>
+        </div>
+        <div class="tablewrap" style="margin-top:12px">
+          <table id="stuTbl" aria-label="قائمة الطلاب"></table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= المعلمون ================= -->
+  <section class="page" id="page-teachers" data-page="teachers" aria-labelledby="h-teachers">
+    <div class="grid2">
+      <div>
+        <div class="card">
+          <div class="card-head"><h2 id="teacherFormTitle">إضافة معلم</h2></div>
+          <form id="teacherForm" novalidate>
+            <div class="fields">
+              <label class="f"><span>اسم المعلم</span>
+                <input id="tName" type="text" autocomplete="off" required>
+              </label>
+              <label class="f"><span>الهاتف (اختياري)</span>
+                <input id="tPhone" type="tel" inputmode="tel" autocomplete="off" dir="ltr">
+              </label>
+            </div>
+            <label class="f" style="margin-top:12px"><span>ملاحظة (اختيارية)</span>
+              <textarea id="tNote" rows="2"></textarea>
+            </label>
+            <p class="small" id="tMsg" role="alert" style="color:var(--absent);margin-top:8px"></p>
+            <div class="row" style="margin-top:12px">
+              <button class="btn primary" id="tSave" type="submit">إضافة المعلم</button>
+              <button class="btn" id="tCancel" type="button" hidden>إلغاء التعديل</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>إضافة حصة للجدول</h2></div>
+          <label class="f"><span>المعلم</span>
+            <select id="schTeacher"></select>
+          </label>
+          <div class="fields" style="margin-top:12px">
+            <label class="f"><span>اليوم</span>
+              <select id="schDay"></select>
+            </label>
+            <label class="f"><span>الحصة</span>
+              <input id="schPeriod" type="number" min="1" max="20" step="1" value="1">
+            </label>
+            <label class="f"><span>الصف</span>
+              <select id="schGrade"></select>
+            </label>
+            <label class="f"><span>الفصل</span>
+              <select id="schCls"></select>
+            </label>
+            <label class="f"><span>المادة (اختياري)</span>
+              <input id="schSubject" type="text" autocomplete="off">
+            </label>
+          </div>
+          <p class="small" id="schMsg" role="alert" style="color:var(--absent);margin-top:8px"></p>
+          <div class="row" style="margin-top:12px">
+            <button class="btn primary" id="schAdd" type="button">إضافة الحصة</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>استيراد الجدول</h2></div>
+          <p class="muted small">ملف Excel أو CSV بأعمدة: المعلم، اليوم، الحصة، الصف، الفصل، المادة. يجب أن يكون المعلم مضافًا وأن يكون الفصل فيه طلاب.</p>
+          <div class="row" style="margin-top:10px">
+            <label class="btn filebtn">اختيار ملف الجدول
+              <input type="file" id="schFileIn" accept=".xlsx,.xls,.csv,.tsv,.txt">
+            </label>
+            <button class="btn" id="btnSchTemplate" type="button">نموذج الجدول</button>
+          </div>
+          <p class="small" id="schImpMsg" role="status" style="margin-top:8px"></p>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>تصدير حزم المعلمين</h2></div>
+          <p class="muted small">الحزمة تحتوي فصول المعلم من جدوله وطلابها فقط، وتُبنى بالصيغة <span class="ltr">ATT-TEACHER-PACK</span> v1.</p>
+          <div class="row" style="margin-top:10px">
+            <button class="btn primary" id="btnExportPack" type="button">تصدير حزمة المعلم المحدد</button>
+            <button class="btn" id="btnExportAllPacks" type="button">تصدير كل الحزم (ZIP)</button>
+          </div>
+          <p class="small" id="packMsg" role="status" style="margin-top:8px"></p>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-head">
+            <h1 id="h-teachers">المعلمون <span class="muted small" id="teacherCount"></span></h1>
+          </div>
+          <div class="tablewrap">
+            <table id="teacherTbl" aria-label="قائمة المعلمين"></table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>الجدول الأسبوعي <span class="muted small" id="schCount"></span></h2>
+            <span class="muted small" id="schTeacherLabel"></span>
+          </div>
+          <div class="tablewrap">
+            <table id="schTbl" aria-label="الجدول الأسبوعي للمعلم"></table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= الوارد ================= -->
+  <section class="page" id="page-inbox" data-page="inbox" aria-labelledby="h-inbox">
+    <div class="card">
+      <div class="card-head">
+        <h1 id="h-inbox">الوارد</h1>
+      </div>
+      <p class="muted small">استورد ملفات الغياب التي يرسلها المعلمون (ملف Excel بصيغة ATT-ABSENCE). لا يُقبل أي ملف بلا التحقق من الصيغة وchecksum.</p>
+      <div class="row" style="margin-top:12px">
+        <label class="btn primary filebtn">اختيار ملفات الغياب
+          <input type="file" id="centralFileIn" accept=".xlsx,.xls" multiple>
+        </label>
+        <button class="btn" id="btnInboxRefresh" type="button">تحديث السجل</button>
+      </div>
+      <p class="small" id="centralMsg" role="status" style="margin-top:10px"></p>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>سجل الاستيراد</h2>
+        <span class="muted small">آخر 100 عملية</span>
+      </div>
+      <div class="tablewrap">
+        <table id="centralLogTbl" aria-label="سجل استيراد ملفات الغياب"></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= التقارير ================= -->
+  <section class="page" id="page-reports" data-page="reports" aria-labelledby="h-reports">
+    <div class="card">
+      <div class="card-head"><h1 id="h-reports">التقارير</h1></div>
+      <div class="fields">
+        <label class="f"><span>من تاريخ</span><input type="date" id="repFrom"></label>
+        <label class="f"><span>إلى تاريخ</span><input type="date" id="repTo"></label>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn" id="btnRepDaily" type="button">الغياب اليومي</button>
+        <button class="btn" id="btnRepByPeriod" type="button">حسب الحصة</button>
+        <button class="btn" id="btnRepStudent" type="button">ملخص طالب</button>
+        <button class="btn" id="btnRepClass" type="button">ملخص فصل</button>
+      </div>
+      <p class="small muted" id="repMsg" role="status" style="margin-top:10px"></p>
+      <div class="tablewrap" style="margin-top:10px">
+        <table id="repTbl" aria-label="نتائج التقرير"></table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>توزيع قوائم الطلاب</h2></div>
+      <p class="muted small">تصدير قائمة الطلاب مع رقم نسخة القائمة (`rosterVersionId`) لمطابقة ملفات الغياب.</p>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" id="btnExportRosterAll" type="button">تصدير القائمة الكاملة</button>
+        <button class="btn" id="btnExportRosterFiltered" type="button">تصدير نتائج فلترة الطلاب</button>
+      </div>
+      <p class="small muted" style="margin-top:8px">الفلترة تؤخذ من قسم الطلاب (البحث/الصف/الفصل).</p>
+    </div>
+  </section>
+
+  <!-- ================= الإعدادات ================= -->
+  <section class="page" id="page-settings" data-page="settings" aria-labelledby="h-settings">
+    <div class="card">
+      <div class="card-head"><h1 id="h-settings">الإعدادات</h1></div>
+      <div class="fields">
+        <label class="f"><span>اسم المدرسة</span>
+          <input id="setSchoolName" type="text" autocomplete="off">
+        </label>
+        <label class="f"><span>عدد الحصص في اليوم</span>
+          <input id="setPeriods" type="number" min="1" max="20" step="1">
+        </label>
+        <label class="f"><span>قاعدة الغياب اليومي</span>
+          <select id="setDailyRule">
+            <option value="first_only">الحصة الأولى فقط</option>
+            <option value="all">كل الحصص</option>
+          </select>
+        </label>
+        <label class="f"><span>القفل التلقائي بعد الخمول</span>
+          <select id="setLockMinutes">
+            <option value="1">دقيقة واحدة</option>
+            <option value="2">دقيقتان</option>
+            <option value="5">5 دقائق</option>
+            <option value="10">10 دقائق</option>
+            <option value="15">15 دقيقة</option>
+            <option value="30">30 دقيقة</option>
+            <option value="60">60 دقيقة</option>
+          </select>
+        </label>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn primary" id="btnSaveSettings" type="button">حفظ الإعدادات</button>
+        <span class="small" id="setMsg" role="status"></span>
+      </div>
+    </div>
+
+    <div class="card" id="pinCard">
+      <div class="card-head"><h2>قفل المركز بـ PIN</h2></div>
+      <p class="small" id="pinState"></p>
+      <div class="fields" style="margin-top:10px">
+        <label class="f"><span>PIN جديد (4 إلى 8 أرقام)</span>
+          <input id="pinNew" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8">
+        </label>
+        <label class="f"><span>تأكيد PIN</span>
+          <input id="pinNew2" type="password" inputmode="numeric" autocomplete="new-password" maxlength="8">
+        </label>
+      </div>
+      <div class="row" style="margin-top:12px">
+        <button class="btn primary" id="btnPinSave" type="button">تعيين PIN</button>
+        <button class="btn danger" id="btnPinRemove" type="button" hidden>إزالة PIN</button>
+        <span class="small" id="pinMsg" role="status"></span>
+      </div>
+      <p class="small muted" style="margin-top:10px">
+        <strong>تنبيه أمني:</strong> هذا قفل واجهة ضد الاستخدام العرضي فقط، وليس حماية مطلقة.
+        من يستطيع فتح أدوات المطور أو قراءة تخزين المتصفح يمكنه تجاوز القفل أو الوصول إلى البيانات.
+        احمِ جهازك بحساب نظام وقفل شاشة.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>النسخ الاحتياطي</h2></div>
+      <div class="row">
+        <button class="btn" id="btnBackupExport" type="button">تنزيل نسخة احتياطية (JSON)</button>
+        <label class="btn filebtn">استعادة نسخة احتياطية
+          <input type="file" id="backupIn" accept=".json,application/json">
+        </label>
+      </div>
+      <p class="small muted" id="backupMsg" role="status" style="margin-top:8px"></p>
+      <hr class="hr">
+      <dl class="kv" id="storeInfo"></dl>
+    </div>
+
+    <div class="card danger-zone">
+      <h3>منطقة الخطر</h3>
+      <p class="small muted" style="margin-block:6px 12px">هذه العمليات لا يمكن التراجع عنها. تُطلب نسخة احتياطية قبل المتابعة.</p>
+      <div class="row">
+        <button class="btn danger" id="btnClearAtt" type="button">حذف سجلات الحضور القديمة</button>
+        <button class="btn danger" id="btnClearAll" type="button">حذف كل بيانات المركز</button>
+      </div>
+    </div>
+  </section>
+
+  <p class="small muted" id="bootInfo" aria-live="polite"></p>
+</main>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="printArea" aria-hidden="true"></div>
+<style id="pageStyle"></style>
+
+<dialog id="dlgConfirm" aria-labelledby="cfTitle">
+  <h3 id="cfTitle">تأكيد</h3>
+  <p id="cfText"></p>
+  <div class="row end" style="margin-top:16px">
+    <button class="btn primary" id="cfYes" type="button">تأكيد</button>
+    <button class="btn" id="cfNo" type="button">إلغاء</button>
+  </div>
+</dialog>
+
+<dialog id="dlgInput" aria-labelledby="inpTitle">
+  <form id="inpForm" novalidate>
+    <h3 id="inpTitle">إدخال</h3>
+    <label class="f"><span id="inpLabel">القيمة</span>
+      <input id="inpValue" type="text" autocomplete="off">
+    </label>
+    <p class="small" id="inpErr" role="alert" style="color:var(--absent);margin-top:6px"></p>
+    <div class="row end" style="margin-top:16px">
+      <button class="btn primary" id="inpOk" type="submit">تأكيد</button>
+      <button class="btn" id="inpCancel" type="button">إلغاء</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlgPin" aria-labelledby="pinDlgTitle">
+  <form id="pinDlgForm" novalidate>
+    <h3 id="pinDlgTitle">تأكيد الهوية</h3>
+    <p class="small" id="pinDlgText"></p>
+    <label class="f"><span>رمز PIN</span>
+      <input id="pinDlgInput" type="password" inputmode="numeric" autocomplete="current-password" maxlength="8" aria-describedby="pinDlgErr">
+    </label>
+    <p class="small" id="pinDlgErr" role="alert" aria-live="assertive" style="color:var(--absent);margin-top:6px"></p>
+    <div class="row end" style="margin-top:16px">
+      <button class="btn primary" id="pinDlgOk" type="submit">تأكيد</button>
+      <button class="btn" id="pinDlgCancel" type="button">إلغاء</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="../shared/core.js"></script>
+<script src="center.js"></script>
+</body>
+</html>
