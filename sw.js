@@ -18,7 +18,7 @@
    ========================================================================== */
 "use strict";
 
-var BUILD = "2026-10-29.3";
+var BUILD = "2026-10-30.1";
 var CACHE_PREFIX = "att-teacher-";
 var CACHE = CACHE_PREFIX + BUILD;
 
