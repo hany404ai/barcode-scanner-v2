@@ -1347,5 +1347,20 @@
     return !!u && !/^(https?:)?\/\//i.test(u);
   };
 
+  ATT.pickRearCamera = function (devices) {
+    devices = devices || [];
+    var frontRe = /front|أمامية|user/i;
+    var rearRe = /back|rear|environment|خلفية/i;
+    var badRe = /ultra|wide|tele/i;
+    var rear = devices.filter(function (d) { return rearRe.test(d.label || "") && !badRe.test(d.label || ""); });
+    if (rear.length) return rear[0].deviceId || "";
+    rear = devices.filter(function (d) { return rearRe.test(d.label || ""); });
+    if (rear.length) return rear[0].deviceId || "";
+    var nonFront = devices.filter(function (d) { return !frontRe.test(d.label || ""); });
+    if (nonFront.length && nonFront.length < devices.length) return nonFront[0].deviceId || "";
+    if (devices.length) return devices[0].deviceId || "";
+    return "";
+  };
+
   return ATT;
 });
