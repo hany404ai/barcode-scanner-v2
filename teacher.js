@@ -1777,13 +1777,28 @@
       scan.busy = true;
       try {
         var vw = video.videoWidth, vh = video.videoHeight;
-        var k = Math.min(1, 1100 / vw);
-        work.width = Math.round(vw * k);
-        work.height = Math.round(vh * k);
-        wctx.drawImage(video, 0, 0, work.width, work.height);
-        var r = await decodeSource(work, work);
+        var vp = $("viewport");
+        var guide = vp ? vp.querySelector(".guide") : null;
+        var vRect = video.getBoundingClientRect();
+        var gRect = guide ? guide.getBoundingClientRect() : null;
+        var guideRel = gRect ? { x: gRect.left - vRect.left, y: gRect.top - vRect.top, w: gRect.width, h: gRect.height } : { x: vRect.width*0.08, y: vRect.height*0.22, w: vRect.width*0.84, h: vRect.height*0.56 };
+        var roi = ATT.computeScanRoi(vw, vh, vRect.width, vRect.height, guideRel, "cover");
+        var k = Math.max(1, ATT.SCAN_MIN_ROI_WIDTH / Math.max(1, roi.w));
+        // cap to avoid huge
+        if (k * roi.w > 1280) k = 1280 / roi.w;
+        work.width = Math.round(roi.w * k);
+        work.height = Math.round(roi.h * k);
+        wctx.drawImage(video, roi.x, roi.y, roi.w, roi.h, 0, 0, work.width, work.height);
+        var res = await decodeSource(work, work);
+        var results = Array.isArray(res) ? res : (res ? [res] : []);
+        // normalize text
+        results = results.map(function (r) { return { text: (r && (r.text || r.rawValue)) || "", cornerPoints: r.cornerPoints || r.corners, boundingBox: r.boundingBox || r.boundingRect }; });
+        var pr = ATT.pickScanResult(results, work.width, work.height, scan);
         scan.frames++;
-        if (r) registerByCode(r.text);
+        if (pr.action === "accept") registerByCode(pr.code);
+        else if (pr.action === "reject" && pr.message) {
+          var rc = $("resultCard"); if (rc) rc.textContent = pr.message;
+        }
       } catch (e) { }
       scan.busy = false;
     }

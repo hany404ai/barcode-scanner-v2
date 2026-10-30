@@ -1608,5 +1608,77 @@
     return n === "" || (/^[0-9]{10,15}$/.test(n));
   };
 
+  /* ======================================================================
+     مسح الباركود — ROI + قواعد قبول
+     ====================================================================== */
+  ATT.SCAN_MIN_ROI_WIDTH = 640;
+  ATT.SCAN_CENTER_TOLERANCE = 0.35;
+  ATT.SCAN_CONFIRM_WINDOW_MS = 600;
+
+  ATT.computeScanRoi = function (videoW, videoH, elemW, elemH, guideRect, objectFit) {
+    objectFit = objectFit || "cover";
+    var scale = (objectFit === "cover")
+      ? Math.max(elemW / videoW, elemH / videoH)
+      : Math.min(elemW / videoW, elemH / videoH);
+    var renderedW = videoW * scale;
+    var renderedH = videoH * scale;
+    var offsetX = (renderedW - elemW) / 2;
+    var offsetY = (renderedH - elemH) / 2;
+    // guideRect is relative to the element (video viewport). Convert to video coords.
+    var gx = guideRect.x + offsetX;
+    var gy = guideRect.y + offsetY;
+    var gw = guideRect.w;
+    var gh = guideRect.h;
+    var x = gx / scale;
+    var y = gy / scale;
+    var w = gw / scale;
+    var h = gh / scale;
+    // clamp
+    if (x < 0) { w += x; x = 0; }
+    if (y < 0) { h += y; y = 0; }
+    if (x + w > videoW) w = videoW - x;
+    if (y + h > videoH) h = videoH - y;
+    if (w < 0) w = 0;
+    if (h < 0) h = 0;
+    return { x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h) };
+  };
+
+  ATT.pickScanResult = function (results, roiW, roiH, state) {
+    state = state || {};
+    if (!results || !results.length) return { action: "none" };
+    // distinct codes
+    var codes = [];
+    results.forEach(function (r) { if (codes.indexOf(r.text) === -1) codes.push(r.text); });
+    if (codes.length > 1) {
+      return { action: "reject", reason: "ambiguous", message: "يوجد أكثر من باركود في المربع، قرّب باركودًا واحدًا فقط" };
+    }
+    var r = results[0];
+    // center check
+    if (r.cornerPoints || r.boundingBox) {
+      var cx, cy;
+      if (r.cornerPoints && r.cornerPoints.length) {
+        cx = r.cornerPoints.reduce(function (a, p) { return a + p.x; }, 0) / r.cornerPoints.length;
+        cy = r.cornerPoints.reduce(function (a, p) { return a + p.y; }, 0) / r.cornerPoints.length;
+      } else {
+        cx = r.boundingBox.x + r.boundingBox.width / 2;
+        cy = r.boundingBox.y + r.boundingBox.height / 2;
+      }
+      // normalize to roi dims (results coords are within roi image already? assume normalized 0..roiW)
+      var dx = Math.abs(cx - roiW / 2) / roiW;
+      var dy = Math.abs(cy - roiH / 2) / roiH;
+      if (dx > ATT.SCAN_CENTER_TOLERANCE || dy > ATT.SCAN_CENTER_TOLERANCE) {
+        return { action: "reject", reason: "offcenter", message: "قرّب الباركود إلى مركز المربع" };
+      }
+    }
+    // two-frame confirmation
+    var now = Date.now();
+    if (state.pendingCode === r.text && state.pendingAt && (now - state.pendingAt) <= ATT.SCAN_CONFIRM_WINDOW_MS) {
+      return { action: "accept", code: r.text };
+    }
+    state.pendingCode = r.text;
+    state.pendingAt = now;
+    return { action: "pending", code: r.text };
+  };
+
   return ATT;
 });
