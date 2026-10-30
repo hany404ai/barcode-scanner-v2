@@ -1917,13 +1917,6 @@
       var s = viewSession();
       if (s) shareSessionFile(s);
     };
-      var t = e.target;
-      if (!t || !t.closest) return;
-      var end = t.closest("[data-stale-end]");
-      if (end) { settleStale(end.getAttribute("data-stale-end"), "end"); return; }
-      var none = t.closest("[data-stale-none]");
-      if (none) settleStale(none.getAttribute("data-stale-none"), "none");
-    });
     if ($("btnBackToday")) $("btnBackToday").onclick = function () {
       var s = viewSession();
       if (s && s.status !== "open") viewKey = null;
