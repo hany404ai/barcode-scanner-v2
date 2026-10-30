@@ -1,4 +1,4 @@
-const BUILD = "2026-10-30.4902e051fda0";
+const BUILD = "2026-10-30.a34bb033e0d6";
 const CACHE = "att-teacher-" + BUILD;
 const PRECACHE = [
   "/.nojekyll",

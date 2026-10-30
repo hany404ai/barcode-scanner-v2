@@ -1994,6 +1994,7 @@
   }
 
   function init() {
+    ATT.setAssetsRoot("./vendor/");
     ATT.wireDialogs();
     video = $("video");
     work = document.createElement("canvas");

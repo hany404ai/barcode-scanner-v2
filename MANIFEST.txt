@@ -10,9 +10,9 @@ manifest.webmanifest | 773 | ed8de32c6f9af79dad99df1c3c6e30e522b47a955987cc992d4
 README.md | 10426 | e5c00ed812bd1cf7da529b6fed7cb3fcdfab3288fded7c7094819b8b1b453eb7
 shared/base.css | 15339 | ffcf38220ec3eaad745ab62ebb08052e2c60b5df28d6caf1c9872864b6433031
 shared/core.js | 71537 | cbd192bda3506dcd57f67203abd18200ea1d51d51b36876b9a6c64208fa06037
-sw.js | 1138 | 3cf264eed5aa1a1b8bfa2a2cfb22ce378ff0c1da68acb70f18c5aa5fe27234d7
+sw.js | 1138 | 8c08fa3ae5de51f2527ddf1ee8b51f2340fe286cd31e56b563140463b8381b56
 teacher.css | 4257 | d6ed59b55fac607c0a6298215f5f9e5e05ae97041c5853fca1f36869d3cbc3e3
-teacher.js | 88947 | 9dad527555ef5fddda591adb0db40665737ff74efe5b8420bca0e526fd8b4dc6
+teacher.js | 88984 | cd742129080ebf2ae5a22d7165c98da26832fb087a060ee87877bebd15cad7c6
 vendor/fonts/ibm-plex-sans-arabic-400.woff2 | 42848 | 6010e7fd0dce5d527583951750728cbe3c895efbd16aa0f809ab8c824878c9d8
 vendor/fonts/ibm-plex-sans-arabic-500.woff2 | 45296 | 90aef64fea9794f232332e907d45810ab268d1a11721340025eba2a2cdb36d5c
 vendor/fonts/ibm-plex-sans-arabic-600.woff2 | 45688 | 16734a5adb27b0f363e566cbbeacec480da0dc0baa19c8f0053251c2e2bc0eac
