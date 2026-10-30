@@ -1,0 +1,428 @@
+﻿<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#086f7c" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#3cc3d4" media="(prefers-color-scheme: dark)">
+<meta name="description" content="تطبيق المعلم: حصصي اليوم، مسح الحضور بالباركود، وإرسال ملف الغياب.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="حضور">
+<meta name="mobile-web-app-capable" content="yes">
+<title>حضور الطلاب — المعلم</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%20100%20100'%3E%3Crect%20width='100'%20height='100'%20rx='18'%20fill='%23086f7c'/%3E%3Cg%20fill='%23fff'%3E%3Crect%20x='20'%20y='26'%20width='8'%20height='48'/%3E%3Crect%20x='34'%20y='26'%20width='4'%20height='48'/%3E%3Crect%20x='44'%20y='26'%20width='10'%20height='48'/%3E%3Crect%20x='60'%20y='26'%20width='4'%20height='48'/%3E%3Crect%20x='70'%20y='26'%20width='8'%20height='48'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon-180.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
+<link rel="stylesheet" href="./shared/base.css">
+<link rel="stylesheet" href="teacher.css">
+</head>
+<body>
+<a class="skip-link" href="#main">تخطي إلى المحتوى</a>
+
+<header class="appbar">
+  <div class="wrap">
+    <div class="brand">
+      <span class="mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" focusable="false"><rect x="3" y="5" width="2" height="14"/><rect x="7" y="5" width="1" height="14"/><rect x="10" y="5" width="3" height="14"/><rect x="15" y="5" width="1" height="14"/><rect x="18" y="5" width="3" height="14"/></svg>
+      </span>
+      <span>
+        <b>حضور الطلاب</b>
+        <span id="teacherName">المعلم</span>
+      </span>
+    </div>
+    <span class="net" id="netState" role="status" aria-live="polite">متصل</span>
+    <div class="row" style="margin-inline-start:auto;gap:8px">
+      <button class="btn sm" id="btnInstallTop" type="button" hidden>تثبيت التطبيق</button>
+      <button class="btn sm" id="btnSettings" type="button" hidden>الإعدادات</button>
+    </div>
+  </div>
+</header>
+
+<main id="main" class="wrap" tabindex="-1">
+  <p class="notice danger" id="storeWarn" hidden>تعذر حفظ البيانات في هذا المتصفح (المساحة ممتلئة أو التخزين معطّل). لن تُحفظ التعديلات بعد إغلاق الصفحة.</p>
+
+  <!-- ================= الإعداد المبدئي ================= -->
+  <section class="page" id="page-setup" data-page="setup" aria-labelledby="h-setup">
+    <div class="card">
+      <div class="card-head">
+        <h1 id="h-setup">إعداد المعلم</h1>
+        <span class="pill info" id="obBadge">أول تشغيل</span>
+      </div>
+      <ol class="wizard-steps" id="obSteps" aria-label="خطوات الإعداد">
+        <li data-step="1">الحزمة</li>
+        <li data-step="2">المراجعة</li>
+        <li data-step="3">الكاميرا</li>
+        <li data-step="4">التثبيت</li>
+      </ol>
+    </div>
+
+    <!-- 1) استيراد الحزمة -->
+    <div class="card" id="obStep1">
+      <h2>1) حزمة المعلم</h2>
+      <p>اختر ملف «حزمة المعلم» الذي صدّره المركز لك. تحتوي الحزمة على فصولك وطلابك وجدولك فقط، ولا تُرسل إلى أي خادم.</p>
+      <ol class="steps">
+        <li><span class="ic">1</span><span>من المركز: قسم المعلمين ← «حزمة» بجانب اسمك.<small>الملف بصيغة <span class="ltr">ATT-TEACHER-PACK</span> v1 وينتهي بـ <span class="ltr">.json</span>.</small></span></li>
+        <li><span class="ic">2</span><span>حمّل الملف على هذا الجهاز ثم اختره من الزر التالي.<small>إن فُتحت الحزمة على جهاز آخر فلن تجد جلساتك السابقة.</small></span></li>
+      </ol>
+      <div class="row" style="margin-top:12px">
+        <label class="btn primary lg filebtn">اختيار حزمة المعلم
+          <input type="file" id="packFile" accept=".json,application/json">
+        </label>
+      </div>
+      <p class="small" id="packMsg" role="status" aria-live="polite" style="margin-top:10px"></p>
+    </div>
+
+    <!-- 2) مراجعة الحزمة -->
+    <div class="card" id="obStep2" hidden>
+      <h2>2) مراجعة الحزمة</h2>
+      <p class="muted">تأكد أن هذه بياناتك قبل البدء. يمكنك اختيار حزمة أخرى إن كانت لمعلم آخر.</p>
+      <dl class="kv" id="obReview"></dl>
+      <p class="small muted" id="obReviewClasses"></p>
+      <div class="row" style="margin-top:14px">
+        <button class="btn primary lg" id="btnObStart" type="button">ابدأ</button>
+        <button class="btn" id="btnObOtherPack" type="button">اختيار حزمة أخرى</button>
+      </div>
+      <p class="small" id="obMsg" role="status" aria-live="polite" style="margin-top:10px"></p>
+    </div>
+
+    <!-- 3) اختبار الكاميرا (اختياري) -->
+    <div class="card" id="obStep3" hidden>
+      <h2>3) اختبار الكاميرا <span class="small muted">(اختياري)</span></h2>
+      <p>يمكنك التأكد من عمل الكاميرا وقراءة الباركود الآن. لن يُسجَّل أي حضور أثناء الاختبار.</p>
+      <div class="row">
+        <button class="btn primary" id="btnObCam" type="button">بدء اختبار الكاميرا</button>
+        <button class="btn" id="btnObSkipCam" type="button">تخطي</button>
+      </div>
+      <p class="small muted" style="margin-top:10px">إن لم تعمل الكاميرا الآن يمكنك المتابعة واستخدام الإدخال اليدوي في الحصة.</p>
+    </div>
+
+    <!-- 4) التثبيت والإنهاء -->
+    <div class="card" id="obStep4" hidden>
+      <h2>4) تثبيت التطبيق</h2>
+      <p id="installState">يمكنك تثبيت التطبيق على الشاشة الرئيسية ليعمل بملء الشاشة وبدون إنترنت بعد التحميل الأول.</p>
+      <div class="row" id="installRow" hidden>
+        <button class="btn primary" id="btnInstall" type="button">تثبيت التطبيق</button>
+      </div>
+      <details class="small" id="iosHelp">
+        <summary>التثبيت على iPhone / iPad</summary>
+        <p>من متصفح Safari: اضغط زر المشاركة، ثم «إضافة إلى الشاشة الرئيسية»، ثم «إضافة».</p>
+      </details>
+      <div class="row" style="margin-top:16px">
+        <button class="btn primary lg wide" id="btnObFinish" type="button">ابدأ استخدام التطبيق</button>
+      </div>
+      <p class="small" id="obFinishMsg" role="status" aria-live="polite" style="margin-top:10px"></p>
+    </div>
+  </section>
+
+  <!-- ================= الرئيسية ================= -->
+  <section class="page" id="page-today" data-page="today" aria-labelledby="h-today">
+    <div class="card">
+      <div class="card-head">
+        <h1 id="h-today">حصصي اليوم</h1>
+        <span class="pill info" id="todayDayName"></span>
+      </div>
+      <div class="row between">
+        <label class="f" style="max-width:220px;flex:1"><span>التاريخ</span>
+          <input type="date" id="todayDate">
+        </label>
+        <button class="btn" id="btnExtraLesson" type="button">حصة إضافية</button>
+      </div>
+      <div class="notice info" id="openNotice" hidden style="margin-top:12px">
+        <div class="row between">
+          <span id="openNoticeText"></span>
+          <button class="btn sm primary" id="btnResumeSession" type="button">متابعة الحصة</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>الحصص</h2>
+        <span class="small muted" id="todayCount"></span>
+      </div>
+      <div class="lesson-list" id="lessonList" aria-live="polite"></div>
+      <p class="small" id="todayMsg" role="status" aria-live="polite" style="margin-top:8px"></p>
+    </div>
+
+    <div class="card" id="staleCard" hidden>
+      <div class="card-head">
+        <h2>حصص لم تُنهَ</h2>
+        <span class="small muted" id="staleCount"></span>
+      </div>
+      <p class="small muted">حصص مفتوحة من أيام سابقة. أنهِ كل واحدة لتظهر غيابها في المركز.</p>
+      <div class="lesson-list" id="staleList"></div>
+    </div>
+
+    <div class="card" id="unsentCard" hidden>
+      <div class="card-head">
+        <h2>حصص لم تُرسل</h2>
+        <span class="small muted" id="unsentCount"></span>
+      </div>
+      <p class="small muted">حصص مغلقة لم يُفتح لها واتساب المركز بعد. أرسل الغياب أو شارك الملف.</p>
+      <div class="lesson-list" id="unsentList"></div>
+    </div>
+  </section>
+
+  <!-- ================= الإعدادات ================= -->
+  <section class="page" id="page-settings" data-page="settings" aria-labelledby="h-settings">
+    <div class="card">
+      <div class="card-head">
+        <button class="btn sm" id="btnSettingsBack" type="button">رجوع</button>
+        <h1 id="h-settings">الإعدادات</h1>
+      </div>
+      <dl class="kv" id="setPackInfo"></dl>
+      <p class="small muted" id="setPackNote">البيانات محفوظة على هذا الجهاز فقط. استيراد حزمة جديدة يستبدل الطلاب والجدول ويُبقي كل الجلسات المسجلة.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>تحديث الحزمة</h2></div>
+      <p class="small muted">اختر حزمة أحدث من المركز. لا يمكن التحديث أثناء وجود حصة مفتوحة.</p>
+      <div class="row" style="margin-top:10px">
+        <label class="btn filebtn">استيراد حزمة جديدة
+          <input type="file" id="packFileSettings" accept=".json,application/json">
+        </label>
+      </div>
+      <p class="small" id="setPackMsg" role="status" aria-live="polite" style="margin-top:10px"></p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>فحص الكاميرا</h2></div>
+      <p class="small muted">اختبار سريع للكاميرا وقراءة الباركود دون تسجيل حضور.</p>
+      <div class="row" style="margin-top:8px">
+        <button class="btn" id="btnSettingsCam" type="button">بدء الفحص</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>الصوت والمظهر</h2></div>
+      <div class="fields">
+        <label class="f"><span>نغمة النجاح</span>
+          <select id="setTone">
+            <option value="default">افتراضية</option>
+            <option value="click">نقرة</option>
+            <option value="short">قصيرة</option>
+          </select>
+        </label>
+        <label class="f"><span>مستوى الصوت</span>
+          <select id="setVol">
+            <option value="silent">صامت</option>
+            <option value="low">منخفض</option>
+            <option value="med">متوسط</option>
+            <option value="high">مرتفع</option>
+          </select>
+        </label>
+        <label class="f"><span>المظهر</span>
+          <select id="setTheme">
+            <option value="auto">حسب النظام</option>
+            <option value="light">فاتح</option>
+            <option value="dark">داكن</option>
+          </select>
+        </label>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" id="btnTestBeep" type="button">تجربة الصوت</button>
+      </div>
+      <p class="small muted" style="margin-top:8px">إعدادات الصوت والمظهر خاصة بهذا الجهاز ولا تأتي من الحزمة.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>التخزين والتحديثات</h2></div>
+      <p class="small muted">يُخزَّن التطبيق وملفاته على هذا الجهاز، فيعمل بدون إنترنت بعد أول تحميل ناجح.</p>
+      <dl class="kv" id="storageInfo"></dl>
+      <p class="notice" id="storageWarn" hidden style="margin-top:10px"></p>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" id="btnCheckUpdate" type="button">التحقق من التحديث</button>
+      </div>
+      <p class="small" id="storageMsg" role="status" aria-live="polite" style="margin-top:8px"></p>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>خصوصية البيانات</h2></div>
+      <p class="small muted">لا يرسل هذا التطبيق أي بيانات إلى خادم. الحزمة تُقرأ من ملف، وملف الغياب يُنزَّل إلى جهازك لتسليمه للمركز.</p>
+    </div>
+  </section>
+
+  <!-- ================= الجلسة ================= -->
+  <section class="page" id="page-session" data-page="session" aria-labelledby="h-session">
+    <div class="card">
+      <div class="card-head">
+        <button class="btn sm" id="btnBackToday" type="button">رجوع</button>
+        <h1 id="h-session">الجلسة</h1>
+        <span class="small muted" id="sessionInfo"></span>
+      </div>
+      <div class="stats" id="sessionStats"></div>
+      <div class="meter" style="margin-top:10px" aria-hidden="true"><i id="meter"></i></div>
+    </div>
+
+    <div class="grid2">
+      <div class="stack">
+        <div class="card">
+          <div class="card-head">
+            <h2>ماسح الباركود</h2>
+            <span class="small muted" id="engineInfo"></span>
+          </div>
+          <div class="viewport" id="viewport">
+            <video id="video" playsinline muted aria-label="كاميرا مسح الباركود"></video>
+            <div class="ph" id="ph">الكاميرا متوقفة. اضغط «تشغيل الكاميرا» أو استخدم الإدخال اليدوي.</div>
+            <div class="guide"></div><div class="scanline"></div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <button class="btn primary" id="btnStart" type="button">تشغيل الكاميرا</button>
+            <button class="btn" id="btnStop" type="button" disabled>إيقاف</button>
+            <label class="f" style="flex:1;min-width:150px">
+              <span class="sr-only">اختيار الكاميرا</span>
+              <select id="camSel" aria-label="اختيار الكاميرا"><option value="">الكاميرا الافتراضية</option></select>
+            </label>
+          </div>
+          <div class="status" id="status" style="margin-top:10px" role="status" aria-live="polite"><span class="dot"></span><span id="statusTxt">الكاميرا متوقفة</span></div>
+        </div>
+
+        <div class="card">
+          <div class="result" id="result" role="status" aria-live="polite"><b>جاهز للمسح</b><span class="small">ستظهر هنا نتيجة آخر باركود تم مسحه.</span></div>
+          <form id="manualForm" class="row" style="margin-top:12px;flex-wrap:nowrap" autocomplete="off">
+            <label class="f" style="flex:1"><span>إدخال الكود يدويًا أو بجهاز مسح USB</span>
+              <input type="text" id="manualCode" inputmode="text" placeholder="اكتب الكود ثم Enter" dir="ltr" style="text-align:right">
+            </label>
+            <button class="btn" type="submit" style="align-self:flex-end">تسجيل</button>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row between" style="margin-bottom:10px">
+          <div class="tabs" role="tablist" aria-label="قائمة الحضور والغياب">
+            <button role="tab" id="tabP" aria-selected="true" aria-controls="listPanel" tabindex="0" type="button">الحاضرون</button>
+            <button role="tab" id="tabA" aria-selected="false" aria-controls="listPanel" tabindex="-1" type="button">الغائبون</button>
+          </div>
+          <span class="small muted" id="listCount"></span>
+        </div>
+        <div class="tablewrap" id="listPanel" role="tabpanel" aria-labelledby="tabP" tabindex="0" style="max-height:560px;overflow:auto">
+          <table id="listTbl" aria-label="قائمة الحاضرين"></table>
+        </div>
+      </div>
+    </div>
+
+    <p class="small" id="sessMsg" role="status" aria-live="polite"></p>
+    <div class="card" id="sendCard" hidden>
+      <div class="card-head">
+        <h2>إرسال الغياب إلى المركز</h2>
+        <span class="pill ok" id="sendBadge" hidden>أُرسلت عبر واتساب</span>
+      </div>
+      <p class="small muted" id="sendInfo"></p>
+      <p class="notice" id="noWaNotice" hidden>لم يُضبط رقم المركز، اطلب حزمة محدثة.</p>
+      <div class="send-actions" id="sendActions"></div>
+      <p class="small" id="sendMsg" role="status" aria-live="polite"></p>
+    </div>
+    <div class="session-actions" id="sessionActions">
+      <button class="btn primary" id="btnEndSession" type="button">إنهاء وإرسال</button>
+      <button class="btn" id="btnShareFile" type="button">مشاركة الملف</button>
+      <button class="btn danger" id="btnNoSession" type="button">تعذر التحضير</button>
+    </div>
+  </section>
+
+  <p class="small muted" id="bootInfo" aria-live="polite"></p>
+</main>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<div id="updateBar" role="region" aria-label="تحديث التطبيق">
+  <div class="inner">
+    <span id="updateText">يتوفر تحديث جديد للتطبيق.</span>
+    <span class="row" style="gap:8px;flex-shrink:0">
+      <button class="btn sm primary" id="btnUpdateNow" type="button">تحديث الآن</button>
+      <button class="btn sm" id="btnUpdateLater" type="button">لاحقًا</button>
+    </span>
+  </div>
+</div>
+
+<dialog id="dlgConfirm" aria-labelledby="cfTitle">
+  <h3 id="cfTitle">تأكيد</h3>
+  <p id="cfText"></p>
+  <div class="row end" style="margin-top:16px">
+    <button class="btn primary" id="cfYes" type="button">تأكيد</button>
+    <button class="btn" id="cfNo" type="button">إلغاء</button>
+  </div>
+</dialog>
+
+<dialog id="dlgInput" aria-labelledby="inpTitle">
+  <form id="inpForm" novalidate>
+    <h3 id="inpTitle">إدخال</h3>
+    <label class="f"><span id="inpLabel">القيمة</span>
+      <input id="inpValue" type="text" autocomplete="off">
+    </label>
+    <p class="small" id="inpErr" role="alert" style="color:var(--absent);margin-top:6px"></p>
+    <div class="row end" style="margin-top:16px">
+      <button class="btn primary" id="inpOk" type="submit">تأكيد</button>
+      <button class="btn" id="inpCancel" type="button">إلغاء</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlgActive" aria-labelledby="actTitle">
+  <h3 id="actTitle">لديك حصة مفتوحة</h3>
+  <p id="actText"></p>
+  <div class="row end" style="margin-top:16px">
+    <button class="btn primary" id="actResume" type="button">العودة إليها</button>
+    <button class="btn" id="actEnd" type="button">إنهاء وإرسالها أولًا</button>
+    <button class="btn" id="actCancel" type="button">إلغاء</button>
+  </div>
+</dialog>
+
+<dialog id="dlgSummary" aria-labelledby="sumTitle">
+  <h3 id="sumTitle">ملخص الحصة</h3>
+  <dl class="kv" id="sumBody"></dl>
+  <p class="small" id="sumMsg" role="status" aria-live="polite" style="margin-top:8px"></p>
+  <div class="row end" style="margin-top:16px">
+    <button class="btn primary" id="sumExport" type="button">إعادة تصدير الملف</button>
+    <button class="btn" id="sumSend" type="button">خيارات الإرسال</button>
+    <button class="btn" id="sumReopen" type="button" hidden>إعادة فتح</button>
+    <button class="btn" id="sumClose" type="button">إغلاق</button>
+  </div>
+</dialog>
+
+<dialog id="dlgExtra" aria-labelledby="extTitle">
+  <form id="extraForm" novalidate>
+    <h3 id="extTitle">حصة إضافية</h3>
+    <p class="small muted">لحصص خارج الجدول أو لتعويض حصة فائتة. الفصول المتاحة من حزمتك فقط.</p>
+    <div class="fields">
+      <label class="f"><span>التاريخ</span>
+        <input type="date" id="extraDate" required>
+      </label>
+      <label class="f"><span>الحصة</span>
+        <select id="extraPeriod"></select>
+      </label>
+      <label class="f"><span>الصف</span>
+        <select id="extraGrade"><option value="">اختر الصف</option></select>
+      </label>
+      <label class="f"><span>الفصل</span>
+        <select id="extraClass"><option value="">اختر الفصل</option></select>
+      </label>
+    </div>
+    <p class="small" id="extraMsg" role="alert" style="margin-top:6px;color:var(--absent)"></p>
+    <div class="row end" style="margin-top:16px">
+      <button class="btn primary" type="submit">فتح الحصة</button>
+      <button class="btn" id="extraCancel" type="button">إلغاء</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="dlgCam" aria-labelledby="camTitle">
+  <div class="card-head">
+    <h3 id="camTitle">فحص الكاميرا والماسح</h3>
+    <button class="btn sm" id="btnCamClose" type="button">إغلاق</button>
+  </div>
+  <div class="viewport" id="testViewport">
+    <video id="testVideo" playsinline muted aria-label="معاينة الكاميرا أثناء الفحص"></video>
+    <div class="ph">الكاميرا متوقفة.</div>
+    <div class="guide"></div><div class="scanline"></div>
+  </div>
+  <div class="status" id="testStatus" role="status" aria-live="polite" style="margin-top:10px"><span class="dot"></span><span id="testStatusTxt">الكاميرا متوقفة</span></div>
+  <p class="small" id="testMsg" style="margin-top:8px"></p>
+  <p class="small muted">لن يُسجَّل أي حضور أثناء الفحص. إن لم تعمل الكاميرا يمكنك استخدام الإدخال اليدوي في الحصة.</p>
+</dialog>
+
+<script src="./shared/core.js"></script>
+<script src="teacher.js"></script>
+</body>
+</html>

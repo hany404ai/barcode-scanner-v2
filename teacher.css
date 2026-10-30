@@ -1,0 +1,118 @@
+/* ==========================================================================
+   teacher/teacher.css — أنماط تطبيق المعلم (موبايل أولًا).
+   الأساسيات المشتركة في ../shared/base.css
+   ========================================================================== */
+
+body { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+
+/* بطاقة الحصة — هدف لمس كبير */
+.lesson {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 12px;
+  flex-wrap: wrap;
+  width: 100%;
+  text-align: start;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  min-height: 76px;
+  cursor: pointer;
+  color: var(--ink);
+  font: inherit;
+}
+.lesson:hover { background: var(--surface-2); }
+.lesson.now { border-color: var(--accent); box-shadow: inset 0 0 0 2px var(--accent-soft); }
+.lesson-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lesson .lp { font-weight: 700; }
+.lesson .lt { color: var(--muted); font-weight: 500; font-size: .8rem; }
+.lesson .lc { font-size: 1.02rem; font-weight: 600; }
+.lesson .lm { color: var(--muted); font-size: .85rem; }
+.lesson + .lesson { margin-top: 10px; }
+
+.lesson-list { display: flex; flex-direction: column; gap: 10px; }
+.lesson-list:empty { display: none; }
+
+/* حصص لم تُنهَ */
+#staleCard { border-color: var(--warn); }
+.lesson.stale { cursor: default; align-items: flex-start; }
+.lesson.stale:hover { background: var(--surface); }
+.stale-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* شاشة الجلسة */
+.session-counters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.session-counters .stat { text-align: center; padding: 10px 6px; }
+.session-counters .stat b { font-size: 1.9rem; }
+
+.session-actions {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 40;
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  display: flex;
+  gap: 8px;
+}
+.session-actions .btn { flex: 1; }
+
+/* شاشة الجلسة — مساحة أسفل الشريط الثابت ومنع التمرير الأفقي */
+#page-session { padding-bottom: 24px; }
+#page-session .grid2 { align-items: start; }
+#page-session .card-head h1 { font-size: 1.15rem; }
+#page-session .stats .stat b { font-size: 1.7rem; }
+#page-session #listPanel { max-height: min(56vh, 520px); }
+#page-session .viewport { max-height: 52vh; aspect-ratio: 4 / 3; }
+#page-session .result { min-height: 64px; }
+
+/* معالج الإعداد */
+.wizard-steps {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+.wizard-steps li {
+  flex: 1 1 0;
+  min-width: 66px;
+  text-align: center;
+  font-size: .78rem;
+  padding: 7px 4px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--muted);
+  border: 1px solid transparent;
+}
+.wizard-steps li.on { background: var(--accent-soft); color: var(--accent); border-color: var(--accent); font-weight: 700; }
+.wizard-steps li.done { color: var(--present); }
+.wizard-steps li.done::before { content: "✓ "; }
+
+#page-setup .card, #page-settings .card { margin-bottom: 14px; }
+#page-setup .card-head h1, #page-settings .card-head h1 { font-size: 1.15rem; }
+#page-settings .kv { margin-bottom: 4px; }
+
+#dlgCam .viewport { aspect-ratio: 4 / 3; max-height: 56vh; }
+
+/* شريط التحديث: أزرار معكوسة لتظهر على خلفية --accent */
+#updateBar .inner .btn {
+  background: var(--accent-ink);
+  color: var(--accent);
+  border-color: transparent;
+}
+#updateBar .inner .btn:hover { background: var(--accent-ink); filter: brightness(.92); }
+#updateBar .inner .btn[disabled] { opacity: .65; }
+#updateBar .inner > span:first-child { min-width: 0; }
+body:has(#updateBar.on) #toast { bottom: calc(96px + env(safe-area-inset-bottom)); }
+
+/* أزرار لمس مريحة على الموبايل */
+#page-today .btn.lg, #page-session .btn.lg, #page-setup .btn.lg { min-height: 52px; }
+@media (max-width: 600px) {
+  #page-session .card-head { gap: 6px; }
+  #page-session .card-head h1 { font-size: 1rem; }
+  #page-session .result b { font-size: 1rem; }
+}
